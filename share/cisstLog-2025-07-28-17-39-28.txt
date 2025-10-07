@@ -1,0 +1,240 @@
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- Class dvrk_system: Configure: system using file "console-MTML-PSM2-bilateral-teleop.json"
+----> content of configuration file: 
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+	"arms" : 
+	[
+		{
+			"base-frame" : 
+			{
+				"reference-frame" : "ECM",
+				"transform" : 
+				[
+					[
+						1,
+						0,
+						0,
+						0.20000000000000001
+					],
+					[
+						0,
+						-0.86602540400000005,
+						0.5,
+						0
+					],
+					[
+						0,
+						-0.5,
+						-0.86602540400000005,
+						0
+					],
+					[
+						0,
+						0,
+						0,
+						1
+					]
+				]
+			},
+			"name" : "PSM2",
+			"serial" : "27374",
+			"system" : "jhu-dVRK",
+			"type" : "PSM"
+		},
+		{
+			"base-frame" : 
+			{
+				"reference-frame" : "HRSV",
+				"transform" : 
+				[
+					[
+						-1,
+						0,
+						0,
+						0.17999999999999999
+					],
+					[
+						0,
+						0.86602540400000005,
+						0.5,
+						0.40000000000000002
+					],
+					[
+						0,
+						0.5,
+						-0.86602540400000005,
+						0.47499999999999998
+					],
+					[
+						0,
+						0,
+						0,
+						1
+					]
+				]
+			},
+			"name" : "MTML",
+			"serial" : "22723",
+			"system" : "jhu-dVRK",
+			"type" : "MTM"
+		}
+	],
+	"component-manager" : 
+	{
+		"components" : 
+		[
+			{
+				"class-name" : "mtsBilateralTeleOperationPSM",
+				"constructor-arg" : 
+				{
+					"Name" : "MTML-PSM2",
+					"Period" : 0.001
+				},
+				"shared-library" : "sawIntuitiveResearchKitBilateralTeleop"
+			}
+		]
+	},
+	"io" : 
+	{
+		"footpedals" : "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+	},
+	"psm-teleops" : 
+	[
+		{
+			"configure-parameter" : 
+			{
+				"scale" : 0.5
+			},
+			"mtm" : "MTML",
+			"psm" : "PSM2",
+			"type" : "TELEOP_PSM_DERIVED"
+		}
+	]
+}
+<----
+M- Class dvrk_system: Configure, loaded:
+------>
+{
+	"IOs" : null,
+	"ISI_focus_controller" : 
+	{
+		"IO" : "",
+		"IO_file" : "",
+		"name" : "ISI_focus_controller"
+	},
+	"arms" : 
+	[
+		{
+			"IO" : "",
+			"IO_file" : "",
+			"IO_gripper_file" : "",
+			"PID_file" : "",
+			"PID_period" : 0,
+			"arm_file" : "",
+			"base_frame" : 
+			{
+				"component" : "",
+				"interface" : "",
+				"reference_frame" : "",
+				"transform" : 
+				[
+					[
+						1,
+						0,
+						0,
+						0
+					],
+					[
+						0,
+						1,
+						0,
+						0
+					],
+					[
+						0,
+						0,
+						1,
+						0
+					],
+					[
+						0,
+						0,
+						0,
+						1
+					]
+				]
+			},
+			"component" : "",
+			"interface" : "",
+			"name" : "PSM2",
+			"name_on_IO" : "",
+			"period" : 0.0006066666666666666,
+			"serial" : "27374",
+			"simulation" : "NONE",
+			"skip_ROS_bridge" : false,
+			"type" : "PSM"
+		},
+		{
+			"IO" : "",
+			"IO_file" : "",
+			"IO_gripper_file" : "",
+			"PID_file" : "",
+			"PID_period" : 0,
+			"arm_file" : "",
+			"base_frame" : 
+			{
+				"component" : "",
+				"interface" : "",
+				"reference_frame" : "",
+				"transform" : 
+				[
+					[
+						1,
+						0,
+						0,
+						0
+					],
+					[
+						0,
+						1,
+						0,
+						0
+					],
+					[
+						0,
+						0,
+						1,
+						0
+					],
+					[
+						0,
+						0,
+						0,
+						1
+					]
+				]
+			},
+			"component" : "",
+			"interface" : "",
+			"name" : "MTML",
+			"name_on_IO" : "",
+			"period" : 0.0006066666666666666,
+			"serial" : "22723",
+			"simulation" : "NONE",
+			"skip_ROS_bridge" : false,
+			"type" : "MTM"
+		}
+	],
+	"component_manager" : null,
+	"consoles" : null,
+	"settings" : 
+	{
+		"audio_volume" : 0.5,
+		"chatty" : false,
+		"path" : null
+	}
+}
+<------
+E- File: arm_proxy.cpp Line: 62 -  arm_proxy::post_configure: "IO" must be provided for native or derived arm: PSM2
