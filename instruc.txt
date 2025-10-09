@@ -1,3 +1,3 @@
 Start with sawIntuitiiceReassearchKit/ros/examples (/bilateralTeleop)
 Useful functions in sawIntuitiveResearchKit/core/components/code/mstIntuitiveReseachKitMTM.cpp or mstIntuitiveReseachKitPSM.cpp
-
+Useful instructions see: sawIntuitiveResearchKit/core/examples/derivedTeleOperationPSM
