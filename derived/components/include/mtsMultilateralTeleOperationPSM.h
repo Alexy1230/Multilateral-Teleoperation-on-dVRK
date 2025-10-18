@@ -57,7 +57,7 @@ protected:
         virtual void populateInterface(mtsInterfaceRequired* interface);
         virtual void add_force_source(std::unique_ptr<ForceSource> source) { force_source = std::move(source); }
 
-        virtual prmStateCartesian computeGoal(Arm* target, double scale);
+        virtual prmStateCartesian computeGoal(Arm* target1, Arm* target2,  double scale);
 
         virtual vctFrm4x4& ClutchOrigin() = 0;
 
@@ -68,7 +68,7 @@ protected:
         mtsMultilateralTeleOperationPSM* teleop;
         std::unique_ptr<ForceSource> force_source;
 
-        mtsFunctionWrite servo_cpvf;
+        mtsFunctionWrite servo_cs;
         mtsFunctionRead measured_cs;
     };
 
@@ -80,6 +80,7 @@ protected:
         vctFrm4x4& ClutchOrigin() override;
         
         prmStateCartesian state() override;
+        prmStateCartesian computeGoal(Arm* target1, Arm* target2,  double scale) override;
         void servo(prmStateCartesian goal) override;
 
         mtsFunctionWrite servo_cp;
@@ -94,6 +95,7 @@ protected:
         vctFrm4x4& ClutchOrigin() override;
         
         prmStateCartesian state() override;
+        prmStateCartesian computeGoal(Arm* target1, Arm* target2,  double scale) override;
         void servo(prmStateCartesian goal) override;
 
         mtsFunctionRead  measured_cp;

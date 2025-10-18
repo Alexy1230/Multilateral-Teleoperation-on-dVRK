@@ -1,0 +1,79 @@
+Start with sawIntuitiiceReassearchKit/ros/examples (/bilateralTeleop)
+Useful functions in sawIntuitiveResearchKit/core/components/code/mstIntuitiveReseachKitMTM.cpp or mstIntuitiveReseachKitPSM.cpp
+Useful instructions see: sawIntuitiveResearchKit/core/examples/derivedTeleOperationPSM
+
+mtsTeleOperationPSM.h  useful functions:
+public:
+Startup
+Run !!!!!!
+set_scale
+lock_rotation
+lock_translation
+set_align_MTM
+following_mtm_body_servo_cf
+
+protected:
+Init
+Clutch
+MessageEvents {desired, current, following}
+ConfigurationEvents {scale, rotation_locked, translation_locked, align_MTM, MTM_is_haptic}
+UpdateAlignOffset
+UpdateInitialState
+...
+EnterEnabled
+RunEnabled
+TransitionEnabled
+RunCartesianTeleop
+RunJawGripperTeleop
+...
+mMTM!
+mPSM!
+...
+m_gripper_to_jaw
+m_gripper_ghost
+GripperToJaw
+JawToGripper
+...
+m_operator
+m_following
+set_following
+
+
+---------------------------------------------------------------------------
+mtsTeleOperationPSM.cpp
+mtsTeleOperationPSM::Init(void):
+running state initialization,
+adding query and motion functions
+footpedal events
+
+mtsTeleOperationPSM::Startup(void):
+set scale, aligning
+
+mtsTeleOperationPSM::Run(void)
+mTeleopState.Run() ?
+
+mtsTeleOperationPSM:: RunCartesianTeleop()
+teleop!
+
+mtsTeleOperationPSM::RunJawGripperTeleop()
+
+
+Derived:
+mtsMultilateralTeleOperationPSM.cpp:
+class::force_source::m_measured_cf
+a variable storing force,
+typically get the updated force by measured_cf()
+
+class::Arm::state()
+measure the arm state by measured_cs
+
+class::ArmMTM::ClutchOrigin()
+return the CartesianInitial State
+
+
+
+---------------------------------------------
+transformationtype.h
+defines many synonyms
+
+should we turn ForceIsValid = true in .h file?

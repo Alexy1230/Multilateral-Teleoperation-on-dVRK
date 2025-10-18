@@ -26,7 +26,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsMultilateralTeleOperationPSM,
                                       mtsTeleOperationPSM,
                                       mtsTaskPeriodicConstructorArg);
 
-void mtsMultilateralTeleOperationPSM::ForceSource::Configure(mtsBilateralTeleOperationPSM* teleop, const Json::Value & jsonConfig) {
+void mtsMultilateralTeleOperationPSM::ForceSource::Configure(mtsMultilateralTeleOperationPSM* teleop, const Json::Value & jsonConfig) {
     std::string component_name;
     std::string provided_interface_name;
     std::string function_name;
@@ -59,42 +59,95 @@ void mtsMultilateralTeleOperationPSM::ForceSource::Configure(mtsBilateralTeleOpe
                      teleop->GetName(), required_interface_name);
 }
 
+// why need force source?  measured_cf? <-> measured_cs?
+// why measured_cf and m_measured_cf
+
 void mtsMultilateralTeleOperationPSM::Arm::populateInterface(mtsInterfaceRequired* interface)
 {
-    interface->AddFunction("servo_cpvf", servo_cpvf, MTS_OPTIONAL);
+    interface->AddFunction("servo_cs", servo_cs, MTS_OPTIONAL);
     interface->AddFunction("measured_cs", measured_cs, MTS_OPTIONAL);
 }
 
-prmStateCartesian mtsMultilateralTeleOperationPSM::Arm::computeGoal(Arm* target, double scale)
+
+prmStateCartesian mtsMultilateralTeleOperationPSM::ArmPSM::computeGoal(Arm* target1, Arm* target2, double scale)
 {
     prmStateCartesian goal;
-    prmStateCartesian target_state = target->state();
+    prmStateCartesian target1_state = target1->state();
+    prmStateCartesian target2_state = target2->state();
 
-    vct3 target_translation = target_state.Position().Translation() - target->ClutchOrigin().Translation();
-    vct3 goal_translation = scale * target_translation + ClutchOrigin().Translation();
+    vct3 target1_translation = target1_state.Position().Translation() - target2->ClutchOrigin().Translation();
+    vct3 target2_translation = target2_state.Position().Translation() - target1->ClutchOrigin().Translation();
+    vct3 goal_translation = scale * (0.5 * target1_translation + 0.5 * target2_translation) + ClutchOrigin().Translation();
 
-    auto align = vctMatRot3(target->ClutchOrigin().Rotation().TransposeRef() * ClutchOrigin().Rotation());
+    auto align_offset_target1 = vctMatRot3(target1->ClutchOrigin().Rotation().TransposeRef() * ClutchOrigin().Rotation());
+    auto align_offset_target2 = vctMatRot3(target2->ClutchOrigin().Rotation().TransposeRef() * ClutchOrigin().Rotation());
+    auto goal_target1 = target1_state.Position().Rotation() * align_offset_target1;
+    auto goal_target2 = target2_state.Position().Rotation() * align_offset_target2;
+    
+    // compute average of two rotations
+    vctQuatRot3 goal_quat1(goal_target1.Rotation(), true);
+    vctQuatRot3 goal_quat2(goal_target2.Rotation(), true);
+    vctQuatRot3 goal_quat_aver(0.5 * (goal_quat1.X()+goal_quat2.X()), 0.5 * (goal_quat1.Y()+goal_quat2.Y()), 
+                               0.5 * (goal_quat1.Z()+goal_quat2.Z()), 0.5 * (goal_quat1.R()+goal_quat2.R()), true);
+    vctMatRot3 goal_rotation = vctMatRot3(goal_quat_aver);
 
-    if (target_state.PositionIsValid()) {
+    if (target1_state.PositionIsValid() && target2_state.PositionIsValid()) {
+        // translation goal
         goal.Position().Translation() = goal_translation;
-        goal.Position().Rotation() = target_state.Position().Rotation() * align;
+        // rotation goal
+        goal.Position().Rotation() = goal_rotation;
     }
-    goal.PositionIsValid() = target_state.PositionIsValid();
+    goal.PositionIsValid() = target1_state.PositionIsValid() && target2_state.PositionIsValid();
 
-    if (target_state.VelocityIsValid()) {
-        goal.Velocity().Ref<3>(0) = scale * target_state.Velocity().Ref<3>(0);
-        goal.Velocity().Ref<3>(3) = target_state.Velocity().Ref<3>(3);
+    if (target1_state.VelocityIsValid() && target2_state.VelocityIsValid()) {
+
+        goal.Velocity().Ref<3>(0) = 0.5 * scale * target1_state.Velocity().Ref<3>(0) + 0.5 * scale * target2_state.Velocity().Ref<3>(0);
+        goal.Velocity().Ref<3>(3) = 0.5 * target1_state.Velocity().Ref<3>(3) + 0.5 * target2_state.Velocity().Ref<3>(3);
     }
-    goal.VelocityIsValid() = target_state.VelocityIsValid();
+    goal.VelocityIsValid() = target1_state.VelocityIsValid() && target2_state.VelocityIsValid()
 
     prmStateCartesian current_state = state();
-    if (target_state.ForceIsValid() && current_state.ForceIsValid()) {
-        goal.Force() = -target_state.Force() - current_state.Force();
+    if (target1_state.ForceIsValid() && target2_state.ForceIsValid() && current_state.ForceIsValid()) {
+        goal.Force() = -0.5 * target1_state.Force() - 0.5 * target2_state.Force() - current_state.Force();
     }
-    goal.ForceIsValid() = target_state.ForceIsValid() && current_state.ForceIsValid();
+    goal.ForceIsValid() = target1_state.ForceIsValid() && target2_state.ForceIsValid() && current_state.ForceIsValid();
 
     return goal;
 }
+
+
+prmStateCartesian mtsMultilateralTeleOperationPSM::ArmMTM::computeGoal(Arm* target_PSM, Arm* target_MTM, double scale)
+{
+    prmStateCartesian goal;
+    prmStateCartesian target_PSM_state = target_PSM->state();
+    prmStateCartesian target_MTM_state = target_MTM->state();
+
+    vct3 target_PSM_translation = target_PSM_state.Position().Translation() - target_PSM->ClutchOrigin().Translation();
+    vct3 goal_translation = target_PSM_translation / scale + ClutchOrigin().Translation();
+
+    auto align = vctMatRot3(target_PSM->ClutchOrigin().Rotation().TransposeRef() * ClutchOrigin().Rotation());
+
+    if (target_PSM_state.PositionIsValid()) {
+        goal.Position().Translation() = goal_translation;
+        goal.Position().Rotation() = target_PSM_state.Position().Rotation() * align;
+    }
+    goal.PositionIsValid() = target_PSM_state.PositionIsValid();
+
+    if (target_PSM_state.VelocityIsValid()) {
+        goal.Velocity().Ref<3>(0) = target_PSM_state.Velocity().Ref<3>(0) / scale;
+        goal.Velocity().Ref<3>(3) = target_PSM_state.Velocity().Ref<3>(3);
+    }
+    goal.VelocityIsValid() = target_PSM_state.VelocityIsValid();
+
+    prmStateCartesian current_state = state();
+    if (target_PSM_state.ForceIsValid() && target_MTM_state.ForceIsValid() && current_state.ForceIsValid()) {
+        goal.Force() = -target_PSM_state.Force() - 0.5 * target_MTM_state.Force() - 0.5 * current_state.Force();
+    }
+    goal.ForceIsValid() = target_PSM_state.ForceIsValid() && target_MTM_state.ForceIsValid() && current_state.ForceIsValid();
+
+    return goal;
+}
+
 
 prmStateCartesian mtsMultilateralTeleOperationPSM::Arm::state()
 {
@@ -112,7 +165,7 @@ prmStateCartesian mtsMultilateralTeleOperationPSM::Arm::state()
 
 void mtsMultilateralTeleOperationPSM::Arm::servo(prmStateCartesian goal)
 {
-    servo_cpvf(goal);
+    servo_cs(goal);
 }
 
 vctFrm4x4& mtsMultilateralTeleOperationPSM::ArmMTM::ClutchOrigin() { return teleop->mMTM.CartesianInitial; }
@@ -144,8 +197,8 @@ prmStateCartesian mtsMultilateralTeleOperationPSM::ArmMTM::state()
 
 void mtsMultilateralTeleOperationPSM::ArmMTM::servo(prmStateCartesian goal)
 {
-    // Use servo_cpvf if available, otherwise fall back to servo_cp
-    if (servo_cpvf.IsValid()) {
+    // Use servo_cs if available, otherwise fall back to servo_cp
+    if (servo_cs.IsValid()) {
         Arm::servo(goal);
     } else {
         prmPositionCartesianSet& servo = teleop->mArmMTM.m_servo_cp;
@@ -191,8 +244,8 @@ prmStateCartesian mtsMultilateralTeleOperationPSM::ArmPSM::state()
 
 void mtsMultilateralTeleOperationPSM::ArmPSM::servo(prmStateCartesian goal)
 {
-    // Use servo_cpvf if available, otherwise fall back to servo_cp
-    if (servo_cpvf.IsValid()) {
+    // Use servo_cs if available, otherwise fall back to servo_cp
+    if (servo_cs.IsValid()) {
         Arm::servo(goal);
     } else {
         prmPositionCartesianSet& servo = teleop->mPSM.m_servo_cp;
@@ -259,14 +312,26 @@ void mtsMultilateralTeleOperationPSM::Configure(const Json::Value & jsonConfig)
         mArmPSM.add_force_source(std::move(source));
     }
 
-    jsonValue = jsonConfig["mtm_force_source"];
+    jsonValue = jsonConfig["mtm1_force_source"];
     if (!jsonValue.empty()) {
         auto source = std::make_unique<ForceSource>();
         source->Configure(this, jsonValue);
         mArmMTM.add_force_source(std::move(source));
     }
 
-    jsonValue = jsonConfig["mtm_torque_gain"];
+    jsonValue = jsonConfig["mtm1_torque_gain"];
+    if (!jsonValue.empty()) {
+        m_mtm_torque_gain = jsonValue.asDouble();
+    }
+
+    jsonValue = jsonConfig["mtm2_force_source"];
+    if (!jsonValue.empty()) {
+        auto source = std::make_unique<ForceSource>();
+        source->Configure(this, jsonValue);
+        mArmMTM.add_force_source(std::move(source));
+    }
+
+    jsonValue = jsonConfig["mtm2_torque_gain"];
     if (!jsonValue.empty()) {
         m_mtm_torque_gain = jsonValue.asDouble();
     }

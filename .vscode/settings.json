@@ -65,5 +65,6 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/ale2002/dvrk_tele_ws/cpp_ws/components"
 }
